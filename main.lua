@@ -1,7 +1,6 @@
 -- =====================================================
--- DEATH RAILS - ULTIMATE EDITION V2
--- FITUR: ESP TARGET | GHOST SHOOT | ESP ZOMBIE | AUTO SHOOT
--- SUPPORT ALL EXECUTOR (KRNL, SYNAPSE, SCRIPT-WARE, ETC)
+-- DEATH RAILS - FIXED VERSION
+-- FITUR: BUTTON MINIMIZE | FLOATING GUI | ESP | GHOST SHOOT
 -- CREATED BY JUNZXSEC | TELEGRAM: @xRay404x
 -- =====================================================
 
@@ -14,88 +13,17 @@
 ╚═════╝ ╚══════╝╚═╝  ╚═╝   ╚═╝   ╚═╝  ╚═╝    ╚═╝  ╚═╝╚═╝  ╚═╝╚═╝╚══════╝╚══════╝
 --]]
 
--- ==================== LOADING SCREEN ====================
-local function showLoading()
-    local loading = Instance.new("ScreenGui")
-    local frame = Instance.new("Frame")
-    local title = Instance.new("TextLabel")
-    local bar = Instance.new("Frame")
-    local fill = Instance.new("Frame")
-    local progress = Instance.new("TextLabel")
-    
-    loading.Name = "DeathRailsLoading"
-    loading.Parent = game.CoreGui
-    loading.ResetOnSpawn = false
-    
-    frame.Parent = loading
-    frame.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
-    frame.BorderSizePixel = 0
-    frame.Position = UDim2.new(0.5, -150, 0.5, -75)
-    frame.Size = UDim2.new(0, 300, 0, 150)
-    frame.Active = true
-    frame.Draggable = true
-    
-    local corner = Instance.new("UICorner")
-    corner.CornerRadius = UDim.new(0, 10)
-    corner.Parent = frame
-    
-    title.Parent = frame
-    title.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-    title.BackgroundTransparency = 1
-    title.Position = UDim2.new(0, 10, 0, 10)
-    title.Size = UDim2.new(1, -20, 0, 30)
-    title.Font = Enum.Font.GothamBold
-    title.Text = "DEATH RAILS ULTIMATE V2"
-    title.TextColor3 = Color3.fromRGB(255, 0, 0)
-    title.TextScaled = true
-    
-    bar.Parent = frame
-    bar.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
-    bar.Position = UDim2.new(0, 20, 0, 70)
-    bar.Size = UDim2.new(1, -40, 0, 25)
-    
-    local barCorner = Instance.new("UICorner")
-    barCorner.CornerRadius = UDim.new(0, 5)
-    barCorner.Parent = bar
-    
-    fill.Parent = bar
-    fill.BackgroundColor3 = Color3.fromRGB(255, 0, 0)
-    fill.Size = UDim2.new(0, 0, 1, 0)
-    
-    local fillCorner = Instance.new("UICorner")
-    fillCorner.CornerRadius = UDim.new(0, 5)
-    fillCorner.Parent = fill
-    
-    progress.Parent = frame
-    progress.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-    progress.BackgroundTransparency = 1
-    progress.Position = UDim2.new(0, 20, 0, 100)
-    progress.Size = UDim2.new(1, -40, 0, 30)
-    progress.Font = Enum.Font.Gotham
-    progress.Text = "Loading 0%"
-    progress.TextColor3 = Color3.fromRGB(255, 255, 255)
-    progress.TextScaled = true
-    
-    spawn(function()
-        for i = 1, 100 do
-            fill:TweenSize(UDim2.new(i/100, 0, 1, 0), "Out", "Linear", 0.03)
-            progress.Text = "Loading " .. i .. "%"
-            wait(0.03)
-        end
-        wait(0.5)
-        loading:Destroy()
-    end)
-end
-
-showLoading()
-
 -- ==================== VARIABLES ====================
 local player = game.Players.LocalPlayer
 local character = player.Character or player.CharacterAdded:Wait()
 local humanoid = character:WaitForChild("Humanoid")
 local rootPart = character:WaitForChild("HumanoidRootPart")
 
--- Auto Farm Variables
+-- GUI Variables
+local guiOpen = false
+local mainGui = nil
+
+-- Farm Variables
 local autoFarm = false
 local autoBuy = false
 local autoFloor = false
@@ -104,235 +32,373 @@ local selectedFloor = 1
 
 -- Movement Variables
 local fly = false
+local flyConnection = nil
 local infiniteJump = false
+local infiniteJumpConnection = nil
 local speedEnabled = false
 local speedAmount = 32
 local jumpPowerEnabled = false
 local jumpPowerAmount = 50
 
--- Combat Variables (FITUR BARU!)
-local espTargetEnabled = false
-local espZombieEnabled = false
+-- Combat Variables
 local ghostShootEnabled = false
 local autoShootEnabled = false
 local aimbotEnabled = false
-local noRecoilEnabled = false
 local rapidFireEnabled = false
 local infiniteAmmoEnabled = false
 local damageMultiplierEnabled = false
 local damageAmount = 100
 
 -- ESP Variables
-local espEnabled = false
+local espTargetEnabled = false
+local espZombieEnabled = false
 local espObjects = {}
 local zombieESPObjects = {}
 
--- Cache for zombies
+-- Zombie List
 local zombies = {}
 local targetZombie = nil
 
--- ==================== CREATE FLOATING GUI ====================
-local gui = Instance.new("ScreenGui")
-gui.Name = "DeathRailsGUI"
-gui.Parent = game.CoreGui
-gui.ResetOnSpawn = false
+-- ==================== LOADING SCREEN ====================
+local loadingGui = Instance.new("ScreenGui")
+loadingGui.Name = "DeathRailsLoading"
+loadingGui.Parent = game.CoreGui
+loadingGui.ResetOnSpawn = false
 
--- Main Frame
-local mainFrame = Instance.new("Frame")
-mainFrame.Name = "MainFrame"
-mainFrame.Parent = gui
-mainFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
-mainFrame.BorderSizePixel = 0
-mainFrame.Position = UDim2.new(0.5, -300, 0.5, -250) -- Lebih gede
-mainFrame.Size = UDim2.new(0, 600, 0, 500)
-mainFrame.Active = true
-mainFrame.Draggable = true
+local loadingFrame = Instance.new("Frame")
+loadingFrame.Parent = loadingGui
+loadingFrame.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
+loadingFrame.BorderSizePixel = 0
+loadingFrame.Position = UDim2.new(0.5, -150, 0.5, -75)
+loadingFrame.Size = UDim2.new(0, 300, 0, 150)
+loadingFrame.Active = true
+loadingFrame.Draggable = true
 
--- Shadow
-local shadow = Instance.new("ImageLabel")
-shadow.Name = "Shadow"
-shadow.Parent = mainFrame
-shadow.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-shadow.BackgroundTransparency = 1
-shadow.Position = UDim2.new(0, -10, 0, -10)
-shadow.Size = UDim2.new(1, 20, 1, 20)
-shadow.Image = "rbxassetid://6015897843"
-shadow.ImageColor3 = Color3.fromRGB(0, 0, 0)
-shadow.ImageTransparency = 0.8
-shadow.ScaleType = Enum.ScaleType.Slice
-shadow.SliceCenter = Rect.new(10, 10, 10, 10)
+local loadingCorner = Instance.new("UICorner")
+loadingCorner.CornerRadius = UDim.new(0, 10)
+loadingCorner.Parent = loadingFrame
 
--- Corner
-local corner = Instance.new("UICorner")
-corner.CornerRadius = UDim.new(0, 15)
-corner.Parent = mainFrame
+local loadingTitle = Instance.new("TextLabel")
+loadingTitle.Parent = loadingFrame
+loadingTitle.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+loadingTitle.BackgroundTransparency = 1
+loadingTitle.Position = UDim2.new(0, 10, 0, 10)
+loadingTitle.Size = UDim2.new(1, -20, 0, 30)
+loadingTitle.Font = Enum.Font.GothamBold
+loadingTitle.Text = "DEATH RAILS ULTIMATE"
+loadingTitle.TextColor3 = Color3.fromRGB(255, 0, 0)
+loadingTitle.TextScaled = true
 
--- Gradient
-local gradient = Instance.new("UIGradient")
-gradient.Color = ColorSequence.new({
-    ColorSequenceKeypoint.new(0, Color3.fromRGB(30, 30, 30)),
-    ColorSequenceKeypoint.new(1, Color3.fromRGB(10, 10, 10))
-})
-gradient.Parent = mainFrame
+local loadingBar = Instance.new("Frame")
+loadingBar.Parent = loadingFrame
+loadingBar.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+loadingBar.Position = UDim2.new(0, 20, 0, 70)
+loadingBar.Size = UDim2.new(1, -40, 0, 25)
 
--- Title Bar
-local titleBar = Instance.new("Frame")
-titleBar.Name = "TitleBar"
-titleBar.Parent = mainFrame
-titleBar.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
-titleBar.BorderSizePixel = 0
-titleBar.Size = UDim2.new(1, 0, 0, 40)
+local loadingBarCorner = Instance.new("UICorner")
+loadingBarCorner.CornerRadius = UDim.new(0, 5)
+loadingBarCorner.Parent = loadingBar
 
-local titleCorner = Instance.new("UICorner")
-titleCorner.CornerRadius = UDim.new(0, 15)
-titleCorner.Parent = titleBar
+local loadingFill = Instance.new("Frame")
+loadingFill.Parent = loadingBar
+loadingFill.BackgroundColor3 = Color3.fromRGB(255, 0, 0)
+loadingFill.Size = UDim2.new(0, 0, 1, 0)
 
-local titleGradient = Instance.new("UIGradient")
-titleGradient.Color = ColorSequence.new({
-    ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 0, 0)),
-    ColorSequenceKeypoint.new(1, Color3.fromRGB(150, 0, 0))
-})
-titleGradient.Parent = titleBar
+local loadingFillCorner = Instance.new("UICorner")
+loadingFillCorner.CornerRadius = UDim.new(0, 5)
+loadingFillCorner.Parent = loadingFill
 
-local titleText = Instance.new("TextLabel")
-titleText.Parent = titleBar
-titleText.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-titleText.BackgroundTransparency = 1
-titleText.Size = UDim2.new(1, 0, 1, 0)
-titleText.Font = Enum.Font.GothamBold
-titleText.Text = "⚡ DEATH RAILS ULTIMATE V2"
-titleText.TextColor3 = Color3.fromRGB(255, 255, 255)
-titleText.TextScaled = true
+local loadingProgress = Instance.new("TextLabel")
+loadingProgress.Parent = loadingFrame
+loadingProgress.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+loadingProgress.BackgroundTransparency = 1
+loadingProgress.Position = UDim2.new(0, 20, 0, 100)
+loadingProgress.Size = UDim2.new(1, -40, 0, 30)
+loadingProgress.Font = Enum.Font.Gotham
+loadingProgress.Text = "Loading 0%"
+loadingProgress.TextColor3 = Color3.fromRGB(255, 255, 255)
+loadingProgress.TextScaled = true
 
--- Close Button
-local closeButton = Instance.new("TextButton")
-closeButton.Name = "CloseButton"
-closeButton.Parent = titleBar
-closeButton.BackgroundColor3 = Color3.fromRGB(200, 0, 0)
-closeButton.BorderSizePixel = 0
-closeButton.Position = UDim2.new(1, -35, 0, 5)
-closeButton.Size = UDim2.new(0, 30, 0, 30)
-closeButton.Font = Enum.Font.GothamBold
-closeButton.Text = "X"
-closeButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-closeButton.TextScaled = true
-
-local closeCorner = Instance.new("UICorner")
-closeCorner.CornerRadius = UDim.new(0, 8)
-closeCorner.Parent = closeButton
-
-closeButton.MouseButton1Click:Connect(function()
-    gui:Destroy()
+-- Loading animation
+spawn(function()
+    for i = 1, 100 do
+        loadingFill:TweenSize(UDim2.new(i/100, 0, 1, 0), "Out", "Linear", 0.03)
+        loadingProgress.Text = "Loading " .. i .. "%"
+        wait(0.03)
+    end
+    wait(0.5)
+    loadingGui:Destroy()
 end)
 
--- Minimize Button
-local minButton = Instance.new("TextButton")
-minButton.Name = "MinButton"
-minButton.Parent = titleBar
-minButton.BackgroundColor3 = Color3.fromRGB(100, 100, 100)
-minButton.BorderSizePixel = 0
-minButton.Position = UDim2.new(1, -70, 0, 5)
-minButton.Size = UDim2.new(0, 30, 0, 30)
-minButton.Font = Enum.Font.GothamBold
-minButton.Text = "–"
-minButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-minButton.TextScaled = true
+-- ==================== CREATE MINIMIZE BUTTON ====================
+local minimizeButton = Instance.new("ScreenGui")
+minimizeButton.Name = "DeathRailsMinimize"
+minimizeButton.Parent = game.CoreGui
+minimizeButton.ResetOnSpawn = false
 
-local minCorner = Instance.new("UICorner")
-minCorner.CornerRadius = UDim.new(0, 8)
-minCorner.Parent = minButton
+local buttonFrame = Instance.new("Frame")
+buttonFrame.Parent = minimizeButton
+buttonFrame.BackgroundColor3 = Color3.fromRGB(255, 0, 0)
+buttonFrame.BorderSizePixel = 0
+buttonFrame.Position = UDim2.new(0, 20, 0.5, -25)
+buttonFrame.Size = UDim2.new(0, 50, 0, 50)
+buttonFrame.Active = true
+buttonFrame.Draggable = true
+buttonFrame.BackgroundTransparency = 0.2
 
--- Tab Buttons (5 TABS)
-local tabFrame = Instance.new("Frame")
-tabFrame.Parent = mainFrame
-tabFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
-tabFrame.BorderSizePixel = 0
-tabFrame.Position = UDim2.new(0, 0, 0, 50)
-tabFrame.Size = UDim2.new(1, 0, 0, 50)
+local buttonCorner = Instance.new("UICorner")
+buttonCorner.CornerRadius = UDim.new(1, 0) -- Circle
+buttonCorner.Parent = buttonFrame
 
-local farmTab = Instance.new("TextButton")
-farmTab.Name = "FarmTab"
-farmTab.Parent = tabFrame
-farmTab.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
-farmTab.BorderSizePixel = 0
-farmTab.Position = UDim2.new(0, 5, 0, 10)
-farmTab.Size = UDim2.new(0.2, -5, 0, 30)
-farmTab.Font = Enum.Font.Gotham
-farmTab.Text = "FARM"
-farmTab.TextColor3 = Color3.fromRGB(255, 255, 255)
-farmTab.TextScaled = true
+local buttonIcon = Instance.new("TextLabel")
+buttonIcon.Parent = buttonFrame
+buttonIcon.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+buttonIcon.BackgroundTransparency = 1
+buttonIcon.Size = UDim2.new(1, 0, 1, 0)
+buttonIcon.Font = Enum.Font.GothamBold
+buttonIcon.Text = "⚡"
+buttonIcon.TextColor3 = Color3.fromRGB(255, 255, 255)
+buttonIcon.TextScaled = true
 
-local movementTab = Instance.new("TextButton")
-movementTab.Name = "MovementTab"
-movementTab.Parent = tabFrame
-movementTab.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
-movementTab.BorderSizePixel = 0
-movementTab.Position = UDim2.new(0.2, 0, 0, 10)
-movementTab.Size = UDim2.new(0.2, -5, 0, 30)
-movementTab.Font = Enum.Font.Gotham
-movementTab.Text = "MOVEMENT"
-movementTab.TextColor3 = Color3.fromRGB(255, 255, 255)
-movementTab.TextScaled = true
+local buttonGlow = Instance.new("ImageLabel")
+buttonGlow.Parent = buttonFrame
+buttonGlow.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+buttonGlow.BackgroundTransparency = 1
+buttonGlow.Size = UDim2.new(1.5, 0, 1.5, 0)
+buttonGlow.Position = UDim2.new(-0.25, 0, -0.25, 0)
+buttonGlow.Image = "rbxassetid://6015897843"
+buttonGlow.ImageColor3 = Color3.fromRGB(255, 0, 0)
+buttonGlow.ImageTransparency = 0.5
+buttonGlow.ScaleType = Enum.ScaleType.Slice
+buttonGlow.SliceCenter = Rect.new(10, 10, 10, 10)
 
-local combatTab = Instance.new("TextButton") -- TAB BARU!
-combatTab.Name = "CombatTab"
-combatTab.Parent = tabFrame
-combatTab.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
-combatTab.BorderSizePixel = 0
-combatTab.Position = UDim2.new(0.4, 0, 0, 10)
-combatTab.Size = UDim2.new(0.2, -5, 0, 30)
-combatTab.Font = Enum.Font.Gotham
-combatTab.Text = "COMBAT"
-combatTab.TextColor3 = Color3.fromRGB(255, 255, 255)
-combatTab.TextScaled = true
+-- ==================== CREATE MAIN GUI FUNCTION ====================
+function createMainGUI()
+    if mainGui then
+        mainGui:Destroy()
+        mainGui = nil
+    end
+    
+    mainGui = Instance.new("ScreenGui")
+    mainGui.Name = "DeathRailsMain"
+    mainGui.Parent = game.CoreGui
+    mainGui.ResetOnSpawn = false
 
-local espTab = Instance.new("TextButton")
-espTab.Name = "ESPTab"
-espTab.Parent = tabFrame
-espTab.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
-espTab.BorderSizePixel = 0
-espTab.Position = UDim2.new(0.6, 0, 0, 10)
-espTab.Size = UDim2.new(0.2, -5, 0, 30)
-espTab.Font = Enum.Font.Gotham
-espTab.Text = "ESP"
-espTab.TextColor3 = Color3.fromRGB(255, 255, 255)
-espTab.TextScaled = true
+    -- Main Frame
+    local mainFrame = Instance.new("Frame")
+    mainFrame.Name = "MainFrame"
+    mainFrame.Parent = mainGui
+    mainFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+    mainFrame.BorderSizePixel = 0
+    mainFrame.Position = UDim2.new(0.5, -300, 0.5, -250)
+    mainFrame.Size = UDim2.new(0, 600, 0, 500)
+    mainFrame.Active = true
+    mainFrame.Draggable = true
 
-local miscTab = Instance.new("TextButton")
-miscTab.Name = "MiscTab"
-miscTab.Parent = tabFrame
-miscTab.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
-miscTab.BorderSizePixel = 0
-miscTab.Position = UDim2.new(0.8, 0, 0, 10)
-miscTab.Size = UDim2.new(0.2, -5, 0, 30)
-miscTab.Font = Enum.Font.Gotham
-miscTab.Text = "MISC"
-miscTab.TextColor3 = Color3.fromRGB(255, 255, 255)
-miscTab.TextScaled = true
+    -- Shadow
+    local shadow = Instance.new("ImageLabel")
+    shadow.Name = "Shadow"
+    shadow.Parent = mainFrame
+    shadow.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+    shadow.BackgroundTransparency = 1
+    shadow.Position = UDim2.new(0, -10, 0, -10)
+    shadow.Size = UDim2.new(1, 20, 1, 20)
+    shadow.Image = "rbxassetid://6015897843"
+    shadow.ImageColor3 = Color3.fromRGB(0, 0, 0)
+    shadow.ImageTransparency = 0.8
+    shadow.ScaleType = Enum.ScaleType.Slice
+    shadow.SliceCenter = Rect.new(10, 10, 10, 10)
 
--- Content Frame
-local contentFrame = Instance.new("Frame")
-contentFrame.Parent = mainFrame
-contentFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
-contentFrame.BorderSizePixel = 0
-contentFrame.Position = UDim2.new(0, 10, 0, 110)
-contentFrame.Size = UDim2.new(1, -20, 1, -130)
+    -- Corner
+    local corner = Instance.new("UICorner")
+    corner.CornerRadius = UDim.new(0, 15)
+    corner.Parent = mainFrame
 
-local contentCorner = Instance.new("UICorner")
-contentCorner.CornerRadius = UDim.new(0, 10)
-contentCorner.Parent = contentFrame
+    -- Gradient
+    local gradient = Instance.new("UIGradient")
+    gradient.Color = ColorSequence.new({
+        ColorSequenceKeypoint.new(0, Color3.fromRGB(30, 30, 30)),
+        ColorSequenceKeypoint.new(1, Color3.fromRGB(10, 10, 10))
+    })
+    gradient.Parent = mainFrame
 
--- Scroll Frame
-local scrollFrame = Instance.new("ScrollingFrame")
-scrollFrame.Parent = contentFrame
-scrollFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
-scrollFrame.BorderSizePixel = 0
-scrollFrame.Position = UDim2.new(0, 0, 0, 0)
-scrollFrame.Size = UDim2.new(1, 0, 1, 0)
-scrollFrame.CanvasSize = UDim2.new(0, 0, 3, 0)
-scrollFrame.ScrollBarThickness = 5
+    -- Title Bar
+    local titleBar = Instance.new("Frame")
+    titleBar.Name = "TitleBar"
+    titleBar.Parent = mainFrame
+    titleBar.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+    titleBar.BorderSizePixel = 0
+    titleBar.Size = UDim2.new(1, 0, 0, 40)
+
+    local titleCorner = Instance.new("UICorner")
+    titleCorner.CornerRadius = UDim.new(0, 15)
+    titleCorner.Parent = titleBar
+
+    local titleGradient = Instance.new("UIGradient")
+    titleGradient.Color = ColorSequence.new({
+        ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 0, 0)),
+        ColorSequenceKeypoint.new(1, Color3.fromRGB(150, 0, 0))
+    })
+    titleGradient.Parent = titleBar
+
+    local titleText = Instance.new("TextLabel")
+    titleText.Parent = titleBar
+    titleText.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+    titleText.BackgroundTransparency = 1
+    titleText.Size = UDim2.new(1, 0, 1, 0)
+    titleText.Font = Enum.Font.GothamBold
+    titleText.Text = "⚡ DEATH RAILS ULTIMATE"
+    titleText.TextColor3 = Color3.fromRGB(255, 255, 255)
+    titleText.TextScaled = true
+
+    -- Close Button
+    local closeButton = Instance.new("TextButton")
+    closeButton.Name = "CloseButton"
+    closeButton.Parent = titleBar
+    closeButton.BackgroundColor3 = Color3.fromRGB(200, 0, 0)
+    closeButton.BorderSizePixel = 0
+    closeButton.Position = UDim2.new(1, -35, 0, 5)
+    closeButton.Size = UDim2.new(0, 30, 0, 30)
+    closeButton.Font = Enum.Font.GothamBold
+    closeButton.Text = "X"
+    closeButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+    closeButton.TextScaled = true
+
+    local closeCorner = Instance.new("UICorner")
+    closeCorner.CornerRadius = UDim.new(0, 8)
+    closeCorner.Parent = closeButton
+
+    closeButton.MouseButton1Click:Connect(function()
+        mainGui:Destroy()
+        mainGui = nil
+        guiOpen = false
+    end)
+
+    -- Minimize Button (inside GUI)
+    local minButton = Instance.new("TextButton")
+    minButton.Name = "MinButton"
+    minButton.Parent = titleBar
+    minButton.BackgroundColor3 = Color3.fromRGB(100, 100, 100)
+    minButton.BorderSizePixel = 0
+    minButton.Position = UDim2.new(1, -70, 0, 5)
+    minButton.Size = UDim2.new(0, 30, 0, 30)
+    minButton.Font = Enum.Font.GothamBold
+    minButton.Text = "–"
+    minButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+    minButton.TextScaled = true
+
+    local minCorner = Instance.new("UICorner")
+    minCorner.CornerRadius = UDim.new(0, 8)
+    minCorner.Parent = minButton
+
+    -- Tab Buttons
+    local tabFrame = Instance.new("Frame")
+    tabFrame.Parent = mainFrame
+    tabFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+    tabFrame.BorderSizePixel = 0
+    tabFrame.Position = UDim2.new(0, 0, 0, 50)
+    tabFrame.Size = UDim2.new(1, 0, 0, 50)
+
+    local farmTab = createTabButton(tabFrame, "FARM", UDim2.new(0, 5, 0, 10), UDim2.new(0.2, -5, 0, 30))
+    local combatTab = createTabButton(tabFrame, "COMBAT", UDim2.new(0.2, 0, 0, 10), UDim2.new(0.2, -5, 0, 30))
+    local movementTab = createTabButton(tabFrame, "MOVEMENT", UDim2.new(0.4, 0, 0, 10), UDim2.new(0.2, -5, 0, 30))
+    local espTab = createTabButton(tabFrame, "ESP", UDim2.new(0.6, 0, 0, 10), UDim2.new(0.2, -5, 0, 30))
+    local miscTab = createTabButton(tabFrame, "MISC", UDim2.new(0.8, 0, 0, 10), UDim2.new(0.2, -5, 0, 30))
+
+    -- Content Frame
+    local contentFrame = Instance.new("Frame")
+    contentFrame.Parent = mainFrame
+    contentFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+    contentFrame.BorderSizePixel = 0
+    contentFrame.Position = UDim2.new(0, 10, 0, 110)
+    contentFrame.Size = UDim2.new(1, -20, 1, -130)
+
+    local contentCorner = Instance.new("UICorner")
+    contentCorner.CornerRadius = UDim.new(0, 10)
+    contentCorner.Parent = contentFrame
+
+    -- Scroll Frame
+    local scrollFrame = Instance.new("ScrollingFrame")
+    scrollFrame.Parent = contentFrame
+    scrollFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+    scrollFrame.BorderSizePixel = 0
+    scrollFrame.Position = UDim2.new(0, 0, 0, 0)
+    scrollFrame.Size = UDim2.new(1, 0, 1, 0)
+    scrollFrame.CanvasSize = UDim2.new(0, 0, 4, 0)
+    scrollFrame.ScrollBarThickness = 5
+    scrollFrame.ScrollBarImageColor3 = Color3.fromRGB(255, 0, 0)
+
+    -- Create all tab contents
+    createFarmContent(scrollFrame)
+    createCombatContent(scrollFrame)
+    createMovementContent(scrollFrame)
+    createESPContent(scrollFrame)
+    createMiscContent(scrollFrame)
+
+    -- Tab switching
+    local tabs = {farmTab, combatTab, movementTab, espTab, miscTab}
+    local contents = {farmContent, combatContent, movementContent, espContent, miscContent}
+    
+    for i, tab in pairs(tabs) do
+        tab.MouseButton1Click:Connect(function()
+            for _, t in pairs(tabs) do
+                t.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+            end
+            tab.BackgroundColor3 = Color3.fromRGB(255, 0, 0)
+            
+            for _, c in pairs(contents) do
+                c.Visible = false
+            end
+            contents[i].Visible = true
+        end)
+    end
+    
+    -- Set default tab
+    farmTab.BackgroundColor3 = Color3.fromRGB(255, 0, 0)
+    farmContent.Visible = true
+    combatContent.Visible = false
+    movementContent.Visible = false
+    espContent.Visible = false
+    miscContent.Visible = false
+
+    -- Minimize functionality
+    local minimized = false
+    minButton.MouseButton1Click:Connect(function()
+        minimized = not minimized
+        if minimized then
+            mainFrame:TweenSize(UDim2.new(0, 600, 0, 50), "Out", "Quad", 0.3)
+            contentFrame.Visible = false
+            tabFrame.Visible = false
+            minButton.Text = "□"
+        else
+            mainFrame:TweenSize(UDim2.new(0, 600, 0, 500), "Out", "Quad", 0.3)
+            contentFrame.Visible = true
+            tabFrame.Visible = true
+            minButton.Text = "–"
+        end
+    end)
+end
 
 -- ==================== HELPER FUNCTIONS ====================
+function createTabButton(parent, text, position, size)
+    local button = Instance.new("TextButton")
+    button.Parent = parent
+    button.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+    button.BorderSizePixel = 0
+    button.Position = position
+    button.Size = size
+    button.Font = Enum.Font.Gotham
+    button.Text = text
+    button.TextColor3 = Color3.fromRGB(255, 255, 255)
+    button.TextScaled = true
+    
+    local corner = Instance.new("UICorner")
+    corner.CornerRadius = UDim.new(0, 8)
+    corner.Parent = button
+    
+    return button
+end
+
 function createToggle(parent, text, position, callback)
     local toggleFrame = Instance.new("Frame")
     toggleFrame.Parent = parent
@@ -507,7 +573,7 @@ function createTargetESP(plr)
     
     local esp = Instance.new("BillboardGui")
     esp.Name = "ESP_" .. plr.Name
-    esp.Parent = plr.Character and plr.Character:FindFirstChild("Head") or nil
+    esp.Parent = plr.Character and plr.Character:FindFirstChild("Head")
     if not esp.Parent then return end
     
     esp.AlwaysOnTop = true
@@ -546,7 +612,6 @@ function createTargetESP(plr)
 
     espObjects[plr] = esp
 
-    -- Update loop
     coroutine.wrap(function()
         while esp and esp.Parent do
             wait(0.1)
@@ -585,11 +650,12 @@ function createZombieESP(zombie)
         zombieESPObjects[zombie] = nil
     end
     
+    local head = zombie:FindFirstChild("Head") or zombie:FindFirstChild("HumanoidRootPart")
+    if not head then return end
+    
     local esp = Instance.new("BillboardGui")
     esp.Name = "ZombieESP"
-    esp.Parent = zombie:FindFirstChild("Head") or zombie:FindFirstChild("HumanoidRootPart") or zombie
-    if not esp.Parent then return end
-    
+    esp.Parent = head
     esp.AlwaysOnTop = true
     esp.Size = UDim2.new(0, 150, 0, 60)
     esp.StudsOffset = Vector3.new(0, 2, 0)
@@ -616,7 +682,6 @@ function createZombieESP(zombie)
 
     zombieESPObjects[zombie] = esp
 
-    -- Update loop
     coroutine.wrap(function()
         while esp and esp.Parent and zombie and zombie.Parent do
             wait(0.1)
@@ -645,7 +710,7 @@ function findNearestZombie()
     local nearestDist = math.huge
     
     for _, zombie in pairs(zombies) do
-        if zombie and zombie.Parent and zombie:FindFirstChild("Humanoid") and zombie.Humanoid.Health > 0 then
+        if zombie and zombie.Parent and zombie:FindFirstChild("Humanoid") and zombie.Humanoid.Health > 0 and zombie:FindFirstChild("HumanoidRootPart") then
             local dist = (rootPart.Position - zombie.HumanoidRootPart.Position).Magnitude
             if dist < nearestDist then
                 nearestDist = dist
@@ -663,27 +728,32 @@ function shootZombie(zombie)
     local tool = player.Character and player.Character:FindFirstChildOfClass("Tool")
     if not tool then return end
     
+    -- Cari remote event untuk shooting
+    local remote = tool:FindFirstChild("RemoteEvent") or tool:FindFirstChild("ShootEvent") or tool:FindFirstChild("Fire")
+    if not remote then return end
+    
     -- Ghost Shoot (tembus tembok)
     if ghostShootEnabled then
         -- Simulate shooting through walls
         local args = {
             [1] = zombie.HumanoidRootPart.Position,
-            [2] = zombie.HumanoidRootPart
+            [2] = zombie.HumanoidRootPart,
+            [3] = true -- wallbang flag
         }
-        tool:FindFirstChild("RemoteEvent"):FireServer(unpack(args))
+        remote:FireServer(unpack(args))
     else
         -- Normal shoot
         local args = {
             [1] = zombie.HumanoidRootPart.Position,
             [2] = zombie.HumanoidRootPart
         }
-        tool:FindFirstChild("RemoteEvent"):FireServer(unpack(args))
+        remote:FireServer(unpack(args))
     end
 end
 
 -- Update zombie list
 game:GetService("Workspace").DescendantAdded:Connect(function(descendant)
-    if descendant:IsA("Model") and descendant:FindFirstChild("Humanoid") and descendant.Name:lower():find("zombie") then
+    if descendant:IsA("Model") and descendant:FindFirstChild("Humanoid") and (descendant.Name:lower():find("zombie") or descendant.Name:lower():find("enemy")) then
         table.insert(zombies, descendant)
         if espZombieEnabled then
             createZombieESP(descendant)
@@ -706,404 +776,306 @@ end)
 
 -- Initial zombie scan
 for _, v in pairs(workspace:GetDescendants()) do
-    if v:IsA("Model") and v:FindFirstChild("Humanoid") and v.Name:lower():find("zombie") then
+    if v:IsA("Model") and v:FindFirstChild("Humanoid") and (v.Name:lower():find("zombie") or v.Name:lower():find("enemy")) then
         table.insert(zombies, v)
     end
 end
 
--- ==================== FARM TAB CONTENT ====================
-local farmContent = Instance.new("Frame")
-farmContent.Name = "FarmContent"
-farmContent.Parent = scrollFrame
-farmContent.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-farmContent.BackgroundTransparency = 1
-farmContent.Size = UDim2.new(1, 0, 3, 0)
-farmContent.Visible = true
+-- ==================== TAB CONTENTS ====================
 
-createLabel(farmContent, "⚙️ FARM SETTINGS", UDim2.new(0, 10, 0, 5), UDim2.new(1, -20, 0, 30))
+-- Farm Content
+function createFarmContent(parent)
+    farmContent = Instance.new("Frame")
+    farmContent.Name = "FarmContent"
+    farmContent.Parent = parent
+    farmContent.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+    farmContent.BackgroundTransparency = 1
+    farmContent.Size = UDim2.new(1, 0, 4, 0)
+    farmContent.Visible = false
 
--- Auto Farm
-local farmToggle = createToggle(farmContent, "Auto Farm", UDim2.new(0, 10, 0, 40), function(value)
-    autoFarm = value
-end)
+    createLabel(farmContent, "⚙️ FARM SETTINGS", UDim2.new(0, 10, 0, 5), UDim2.new(1, -20, 0, 30))
 
--- Auto Buy
-local buyToggle = createToggle(farmContent, "Auto Buy", UDim2.new(0, 10, 0, 90), function(value)
-    autoBuy = value
-end)
+    createToggle(farmContent, "Auto Farm", UDim2.new(0, 10, 0, 40), function(value)
+        autoFarm = value
+    end)
 
--- Auto Floor
-local floorToggle = createToggle(farmContent, "Auto Floor", UDim2.new(0, 10, 0, 140), function(value)
-    autoFloor = value
-end)
+    createToggle(farmContent, "Auto Buy", UDim2.new(0, 10, 0, 90), function(value)
+        autoBuy = value
+    end)
 
--- Auto Spin
-local spinToggle = createToggle(farmContent, "Auto Spin", UDim2.new(0, 10, 0, 190), function(value)
-    autoSpin = value
-end)
+    createToggle(farmContent, "Auto Floor", UDim2.new(0, 10, 0, 140), function(value)
+        autoFloor = value
+    end)
 
--- Floor Selector
-createLabel(farmContent, "🎯 FLOOR SELECTOR", UDim2.new(0, 10, 0, 240), UDim2.new(1, -20, 0, 30))
+    createToggle(farmContent, "Auto Spin", UDim2.new(0, 10, 0, 190), function(value)
+        autoSpin = value
+    end)
 
-local floorLabel = Instance.new("TextLabel")
-floorLabel.Parent = farmContent
-floorLabel.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-floorLabel.BackgroundTransparency = 1
-floorLabel.Position = UDim2.new(0, 10, 0, 275)
-floorLabel.Size = UDim2.new(0.5, -15, 0, 40)
-floorLabel.Font = Enum.Font.Gotham
-floorLabel.Text = "Floor: " .. selectedFloor
-floorLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-floorLabel.TextScaled = true
+    createLabel(farmContent, "🎯 FLOOR SELECTOR", UDim2.new(0, 10, 0, 240), UDim2.new(1, -20, 0, 30))
 
-local floorPlus = createButton(farmContent, "+", UDim2.new(0.5, 5, 0, 275), UDim2.new(0, 50, 0, 40), function()
-    selectedFloor = selectedFloor + 1
+    local floorLabel = Instance.new("TextLabel")
+    floorLabel.Parent = farmContent
+    floorLabel.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+    floorLabel.BackgroundTransparency = 1
+    floorLabel.Position = UDim2.new(0, 10, 0, 275)
+    floorLabel.Size = UDim2.new(0.5, -15, 0, 40)
+    floorLabel.Font = Enum.Font.Gotham
     floorLabel.Text = "Floor: " .. selectedFloor
-end)
+    floorLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+    floorLabel.TextScaled = true
 
-local floorMinus = createButton(farmContent, "-", UDim2.new(0.7, 5, 0, 275), UDim2.new(0, 50, 0, 40), function()
-    if selectedFloor > 1 then
-        selectedFloor = selectedFloor - 1
+    createButton(farmContent, "+", UDim2.new(0.5, 5, 0, 275), UDim2.new(0, 50, 0, 40), function()
+        selectedFloor = selectedFloor + 1
         floorLabel.Text = "Floor: " .. selectedFloor
-    end
-end)
+    end)
 
--- ==================== MOVEMENT TAB CONTENT ====================
-local movementContent = Instance.new("Frame")
-movementContent.Name = "MovementContent"
-movementContent.Parent = scrollFrame
-movementContent.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-movementContent.BackgroundTransparency = 1
-movementContent.Size = UDim2.new(1, 0, 3, 0)
-movementContent.Visible = false
-
-createLabel(movementContent, "🏃 MOVEMENT SETTINGS", UDim2.new(0, 10, 0, 5), UDim2.new(1, -20, 0, 30))
-
--- Fly
-local flyToggle = createToggle(movementContent, "Fly", UDim2.new(0, 10, 0, 40), function(value)
-    fly = value
-    if fly then
-        local bodyGyro = Instance.new("BodyGyro")
-        bodyGyro.Parent = rootPart
-        bodyGyro.MaxTorque = Vector3.new(9e9, 9e9, 9e9)
-        
-        local bodyVelocity = Instance.new("BodyVelocity")
-        bodyVelocity.Parent = rootPart
-        bodyVelocity.MaxForce = Vector3.new(9e9, 9e9, 9e9)
-        bodyVelocity.Velocity = Vector3.new(0, 0, 0)
-        
-        flyConnection = game:GetService("RunService").Heartbeat:Connect(function()
-            if fly and rootPart and rootPart.Parent then
-                bodyVelocity.Velocity = workspace.CurrentCamera.CFrame.LookVector * 50 * (humanoid.MoveDirection.Magnitude > 0 and 1 or 0)
-                bodyVelocity.Velocity = bodyVelocity.Velocity + Vector3.new(0, (humanoid.Jump and 50 or 0) - (humanoid.Sit and 50 or 0), 0)
-                bodyGyro.CFrame = workspace.CurrentCamera.CFrame
-            else
-                if bodyGyro then bodyGyro:Destroy() end
-                if bodyVelocity then bodyVelocity:Destroy() end
-                if flyConnection then flyConnection:Disconnect() end
-            end
-        end)
-    end
-end)
-
--- Infinite Jump
-local jumpToggle = createToggle(movementContent, "Infinite Jump", UDim2.new(0, 10, 0, 90), function(value)
-    infiniteJump = value
-    if infiniteJump then
-        game:GetService("UserInputService").JumpRequest:Connect(function()
-            if infiniteJump then
-                humanoid:ChangeState("Jumping")
-            end
-        end)
-    end
-end)
-
--- Speed
-local speedToggle = createToggle(movementContent, "Speed", UDim2.new(0, 10, 0, 140), function(value)
-    speedEnabled = value
-    if speedEnabled then
-        humanoid.WalkSpeed = speedAmount
-    else
-        humanoid.WalkSpeed = 16
-    end
-end)
-
-local speedSlider = createSlider(movementContent, "Speed Value", UDim2.new(0, 10, 0, 190), 16, 200, speedAmount, function(value)
-    speedAmount = value
-    if speedEnabled then
-        humanoid.WalkSpeed = value
-    end
-end)
-
--- Jump Power
-local jumpPowerToggle = createToggle(movementContent, "Jump Power", UDim2.new(0, 10, 0, 260), function(value)
-    jumpPowerEnabled = value
-    if jumpPowerEnabled then
-        humanoid.JumpPower = jumpPowerAmount
-    else
-        humanoid.JumpPower = 50
-    end
-end)
-
-local jumpSlider = createSlider(movementContent, "Jump Value", UDim2.new(0, 10, 0, 310), 50, 500, jumpPowerAmount, function(value)
-    jumpPowerAmount = value
-    if jumpPowerEnabled then
-        humanoid.JumpPower = value
-    end
-end)
-
--- ==================== COMBAT TAB CONTENT (BARU!) ====================
-local combatContent = Instance.new("Frame")
-combatContent.Name = "CombatContent"
-combatContent.Parent = scrollFrame
-combatContent.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-combatContent.BackgroundTransparency = 1
-combatContent.Size = UDim2.new(1, 0, 3, 0)
-combatContent.Visible = false
-
-createLabel(combatContent, "⚔️ COMBAT SETTINGS", UDim2.new(0, 10, 0, 5), UDim2.new(1, -20, 0, 30))
-
--- Ghost Shoot
-local ghostShootToggle = createToggle(combatContent, "Ghost Shoot (Wallbang)", UDim2.new(0, 10, 0, 40), function(value)
-    ghostShootEnabled = value
-end)
-
--- Auto Shoot
-local autoShootToggle = createToggle(combatContent, "Auto Shoot", UDim2.new(0, 10, 0, 90), function(value)
-    autoShootEnabled = value
-end)
-
--- Aimbot
-local aimbotToggle = createToggle(combatContent, "Aimbot", UDim2.new(0, 10, 0, 140), function(value)
-    aimbotEnabled = value
-end)
-
--- No Recoil
-local noRecoilToggle = createToggle(combatContent, "No Recoil", UDim2.new(0, 10, 0, 190), function(value)
-    noRecoilEnabled = value
-    if value then
-        -- Find and modify recoil values
-        for _, v in pairs(player.PlayerGui:GetDescendants()) do
-            if v:IsA("NumberValue") and v.Name:lower():find("recoil") then
-                v.Value = 0
-            end
+    createButton(farmContent, "-", UDim2.new(0.7, 5, 0, 275), UDim2.new(0, 50, 0, 40), function()
+        if selectedFloor > 1 then
+            selectedFloor = selectedFloor - 1
+            floorLabel.Text = "Floor: " .. selectedFloor
         end
-    end
-end)
+    end)
+end
 
--- Rapid Fire
-local rapidFireToggle = createToggle(combatContent, "Rapid Fire", UDim2.new(0, 10, 0, 240), function(value)
-    rapidFireEnabled = value
-end)
-
--- Infinite Ammo
-local infiniteAmmoToggle = createToggle(combatContent, "Infinite Ammo", UDim2.new(0, 10, 0, 290), function(value)
-    infiniteAmmoEnabled = value
-end)
-
--- Damage Multiplier
-local damageToggle = createToggle(combatContent, "Damage Multiplier", UDim2.new(0, 10, 0, 340), function(value)
-    damageMultiplierEnabled = value
-end)
-
-local damageSlider = createSlider(combatContent, "Damage Amount", UDim2.new(0, 10, 0, 390), 10, 1000, damageAmount, function(value)
-    damageAmount = value
-end)
-
--- ==================== ESP TAB CONTENT ====================
-local espContent = Instance.new("Frame")
-espContent.Name = "ESPContent"
-espContent.Parent = scrollFrame
-espContent.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-espContent.BackgroundTransparency = 1
-espContent.Size = UDim2.new(1, 0, 3, 0)
-espContent.Visible = false
-
-createLabel(espContent, "👁️ ESP SETTINGS", UDim2.new(0, 10, 0, 5), UDim2.new(1, -20, 0, 30))
-
--- Player ESP
-local playerEspToggle = createToggle(espContent, "ESP Target (Player)", UDim2.new(0, 10, 0, 40), function(value)
-    espTargetEnabled = value
-    if espTargetEnabled then
-        for _, plr in pairs(game.Players:GetPlayers()) do
-            if plr ~= player then
-                createTargetESP(plr)
-            end
-        end
-        
-        game.Players.PlayerAdded:Connect(function(plr)
-            if espTargetEnabled then
-                createTargetESP(plr)
-            end
-        end)
-        
-        game.Players.PlayerRemoving:Connect(function(plr)
-            if espObjects[plr] then
-                espObjects[plr]:Destroy()
-                espObjects[plr] = nil
-            end
-        end)
-    else
-        for _, esp in pairs(espObjects) do
-            if esp then
-                esp:Destroy()
-            end
-        end
-        table.clear(espObjects)
-    end
-end)
-
--- Zombie ESP
-local zombieEspToggle = createToggle(espContent, "ESP Zombie", UDim2.new(0, 10, 0, 90), function(value)
-    espZombieEnabled = value
-    if espZombieEnabled then
-        for _, zombie in pairs(zombies) do
-            createZombieESP(zombie)
-        end
-    else
-        for _, esp in pairs(zombieESPObjects) do
-            if esp then
-                esp:Destroy()
-            end
-        end
-        table.clear(zombieESPObjects)
-    end
-end)
-
--- ==================== MISC TAB CONTENT ====================
-local miscContent = Instance.new("Frame")
-miscContent.Name = "MiscContent"
-miscContent.Parent = scrollFrame
-miscContent.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-miscContent.BackgroundTransparency = 1
-miscContent.Size = UDim2.new(1, 0, 3, 0)
-miscContent.Visible = false
-
-createLabel(miscContent, "⚙️ MISC SETTINGS", UDim2.new(0, 10, 0, 5), UDim2.new(1, -20, 0, 30))
-
--- Anti AFK
-local antiAfkToggle = createToggle(miscContent, "Anti AFK", UDim2.new(0, 10, 0, 40), function(value)
-    if value then
-        local vu = game:GetService("VirtualUser")
-        game:GetService("Players").LocalPlayer.Idled:Connect(function()
-            vu:CaptureController()
-            vu:ClickButton2(Vector2.new())
-        end)
-    end
-end)
-
--- No Fog
-local noFogToggle = createToggle(miscContent, "No Fog", UDim2.new(0, 10, 0, 90), function(value)
-    if value then
-        game:GetService("Lighting").FogEnd = 1e9
-    else
-        game:GetService("Lighting").FogEnd = 1000
-    end
-end)
-
--- Full Bright
-local fullBrightToggle = createToggle(miscContent, "Full Bright", UDim2.new(0, 10, 0, 140), function(value)
-    if value then
-        game:GetService("Lighting").Brightness = 2
-        game:GetService("Lighting").Ambient = Color3.fromRGB(255, 255, 255)
-    else
-        game:GetService("Lighting").Brightness = 1
-        game:GetService("Lighting").Ambient = Color3.fromRGB(0, 0, 0)
-    end
-end)
-
--- Watermark
-local watermarkToggle = createToggle(miscContent, "Watermark", UDim2.new(0, 10, 0, 190), function(value)
-    if watermark then
-        watermark.Enabled = value
-    end
-end)
-
--- ==================== TAB SWITCHING ====================
-farmTab.MouseButton1Click:Connect(function()
-    farmTab.BackgroundColor3 = Color3.fromRGB(255, 0, 0)
-    movementTab.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
-    combatTab.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
-    espTab.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
-    miscTab.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
-    
-    farmContent.Visible = true
-    movementContent.Visible = false
+-- Combat Content
+function createCombatContent(parent)
+    combatContent = Instance.new("Frame")
+    combatContent.Name = "CombatContent"
+    combatContent.Parent = parent
+    combatContent.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+    combatContent.BackgroundTransparency = 1
+    combatContent.Size = UDim2.new(1, 0, 4, 0)
     combatContent.Visible = false
-    espContent.Visible = false
-    miscContent.Visible = false
-end)
 
-movementTab.MouseButton1Click:Connect(function()
-    farmTab.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
-    movementTab.BackgroundColor3 = Color3.fromRGB(255, 0, 0)
-    combatTab.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
-    espTab.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
-    miscTab.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
-    
-    farmContent.Visible = false
-    movementContent.Visible = true
-    combatContent.Visible = false
-    espContent.Visible = false
-    miscContent.Visible = false
-end)
+    createLabel(combatContent, "⚔️ COMBAT SETTINGS", UDim2.new(0, 10, 0, 5), UDim2.new(1, -20, 0, 30))
 
-combatTab.MouseButton1Click:Connect(function()
-    farmTab.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
-    movementTab.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
-    combatTab.BackgroundColor3 = Color3.fromRGB(255, 0, 0)
-    espTab.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
-    miscTab.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
-    
-    farmContent.Visible = false
+    createToggle(combatContent, "Ghost Shoot (Wallbang)", UDim2.new(0, 10, 0, 40), function(value)
+        ghostShootEnabled = value
+    end)
+
+    createToggle(combatContent, "Auto Shoot", UDim2.new(0, 10, 0, 90), function(value)
+        autoShootEnabled = value
+    end)
+
+    createToggle(combatContent, "Aimbot", UDim2.new(0, 10, 0, 140), function(value)
+        aimbotEnabled = value
+    end)
+
+    createToggle(combatContent, "Rapid Fire", UDim2.new(0, 10, 0, 190), function(value)
+        rapidFireEnabled = value
+    end)
+
+    createToggle(combatContent, "Infinite Ammo", UDim2.new(0, 10, 0, 240), function(value)
+        infiniteAmmoEnabled = value
+    end)
+
+    createToggle(combatContent, "Damage Multiplier", UDim2.new(0, 10, 0, 290), function(value)
+        damageMultiplierEnabled = value
+    end)
+
+    createSlider(combatContent, "Damage Amount", UDim2.new(0, 10, 0, 340), 10, 1000, damageAmount, function(value)
+        damageAmount = value
+    end)
+end
+
+-- Movement Content
+function createMovementContent(parent)
+    movementContent = Instance.new("Frame")
+    movementContent.Name = "MovementContent"
+    movementContent.Parent = parent
+    movementContent.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+    movementContent.BackgroundTransparency = 1
+    movementContent.Size = UDim2.new(1, 0, 4, 0)
     movementContent.Visible = false
-    combatContent.Visible = true
+
+    createLabel(movementContent, "🏃 MOVEMENT SETTINGS", UDim2.new(0, 10, 0, 5), UDim2.new(1, -20, 0, 30))
+
+    createToggle(movementContent, "Fly", UDim2.new(0, 10, 0, 40), function(value)
+        fly = value
+        if fly then
+            local bodyGyro = Instance.new("BodyGyro")
+            bodyGyro.Parent = rootPart
+            bodyGyro.MaxTorque = Vector3.new(9e9, 9e9, 9e9)
+            
+            local bodyVelocity = Instance.new("BodyVelocity")
+            bodyVelocity.Parent = rootPart
+            bodyVelocity.MaxForce = Vector3.new(9e9, 9e9, 9e9)
+            bodyVelocity.Velocity = Vector3.new(0, 0, 0)
+            
+            flyConnection = game:GetService("RunService").Heartbeat:Connect(function()
+                if fly and rootPart and rootPart.Parent then
+                    bodyVelocity.Velocity = workspace.CurrentCamera.CFrame.LookVector * 50 * (humanoid.MoveDirection.Magnitude > 0 and 1 or 0)
+                    bodyVelocity.Velocity = bodyVelocity.Velocity + Vector3.new(0, (humanoid.Jump and 50 or 0) - (humanoid.Sit and 50 or 0), 0)
+                    bodyGyro.CFrame = workspace.CurrentCamera.CFrame
+                else
+                    if bodyGyro then bodyGyro:Destroy() end
+                    if bodyVelocity then bodyVelocity:Destroy() end
+                    if flyConnection then flyConnection:Disconnect() end
+                end
+            end)
+        end
+    end)
+
+    createToggle(movementContent, "Infinite Jump", UDim2.new(0, 10, 0, 90), function(value)
+        infiniteJump = value
+        if infiniteJump then
+            infiniteJumpConnection = game:GetService("UserInputService").JumpRequest:Connect(function()
+                if infiniteJump then
+                    humanoid:ChangeState("Jumping")
+                end
+            end)
+        else
+            if infiniteJumpConnection then
+                infiniteJumpConnection:Disconnect()
+            end
+        end
+    end)
+
+    createToggle(movementContent, "Speed", UDim2.new(0, 10, 0, 140), function(value)
+        speedEnabled = value
+        if speedEnabled then
+            humanoid.WalkSpeed = speedAmount
+        else
+            humanoid.WalkSpeed = 16
+        end
+    end)
+
+    createSlider(movementContent, "Speed Value", UDim2.new(0, 10, 0, 190), 16, 200, speedAmount, function(value)
+        speedAmount = value
+        if speedEnabled then
+            humanoid.WalkSpeed = value
+        end
+    end)
+
+    createToggle(movementContent, "Jump Power", UDim2.new(0, 10, 0, 260), function(value)
+        jumpPowerEnabled = value
+        if jumpPowerEnabled then
+            humanoid.JumpPower = jumpPowerAmount
+        else
+            humanoid.JumpPower = 50
+        end
+    end)
+
+    createSlider(movementContent, "Jump Value", UDim2.new(0, 10, 0, 310), 50, 500, jumpPowerAmount, function(value)
+        jumpPowerAmount = value
+        if jumpPowerEnabled then
+            humanoid.JumpPower = value
+        end
+    end)
+end
+
+-- ESP Content
+function createESPContent(parent)
+    espContent = Instance.new("Frame")
+    espContent.Name = "ESPContent"
+    espContent.Parent = parent
+    espContent.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+    espContent.BackgroundTransparency = 1
+    espContent.Size = UDim2.new(1, 0, 4, 0)
     espContent.Visible = false
+
+    createLabel(espContent, "👁️ ESP SETTINGS", UDim2.new(0, 10, 0, 5), UDim2.new(1, -20, 0, 30))
+
+    createToggle(espContent, "ESP Target (Player)", UDim2.new(0, 10, 0, 40), function(value)
+        espTargetEnabled = value
+        if espTargetEnabled then
+            for _, plr in pairs(game.Players:GetPlayers()) do
+                if plr ~= player then
+                    createTargetESP(plr)
+                end
+            end
+            
+            game.Players.PlayerAdded:Connect(function(plr)
+                if espTargetEnabled then
+                    createTargetESP(plr)
+                end
+            end)
+            
+            game.Players.PlayerRemoving:Connect(function(plr)
+                if espObjects[plr] then
+                    espObjects[plr]:Destroy()
+                    espObjects[plr] = nil
+                end
+            end)
+        else
+            for _, esp in pairs(espObjects) do
+                if esp then
+                    esp:Destroy()
+                end
+            end
+            table.clear(espObjects)
+        end
+    end)
+
+    createToggle(espContent, "ESP Zombie", UDim2.new(0, 10, 0, 90), function(value)
+        espZombieEnabled = value
+        if espZombieEnabled then
+            for _, zombie in pairs(zombies) do
+                createZombieESP(zombie)
+            end
+        else
+            for _, esp in pairs(zombieESPObjects) do
+                if esp then
+                    esp:Destroy()
+                end
+            end
+            table.clear(zombieESPObjects)
+        end
+    end)
+end
+
+-- Misc Content
+function createMiscContent(parent)
+    miscContent = Instance.new("Frame")
+    miscContent.Name = "MiscContent"
+    miscContent.Parent = parent
+    miscContent.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+    miscContent.BackgroundTransparency = 1
+    miscContent.Size = UDim2.new(1, 0, 4, 0)
     miscContent.Visible = false
-end)
 
-espTab.MouseButton1Click:Connect(function()
-    farmTab.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
-    movementTab.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
-    combatTab.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
-    espTab.BackgroundColor3 = Color3.fromRGB(255, 0, 0)
-    miscTab.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
-    
-    farmContent.Visible = false
-    movementContent.Visible = false
-    combatContent.Visible = false
-    espContent.Visible = true
-    miscContent.Visible = false
-end)
+    createLabel(miscContent, "⚙️ MISC SETTINGS", UDim2.new(0, 10, 0, 5), UDim2.new(1, -20, 0, 30))
 
-miscTab.MouseButton1Click:Connect(function()
-    farmTab.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
-    movementTab.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
-    combatTab.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
-    espTab.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
-    miscTab.BackgroundColor3 = Color3.fromRGB(255, 0, 0)
-    
-    farmContent.Visible = false
-    movementContent.Visible = false
-    combatContent.Visible = false
-    espContent.Visible = false
-    miscContent.Visible = true
-end)
+    createToggle(miscContent, "Anti AFK", UDim2.new(0, 10, 0, 40), function(value)
+        if value then
+            local vu = game:GetService("VirtualUser")
+            player.Idled:Connect(function()
+                vu:CaptureController()
+                vu:ClickButton2(Vector2.new())
+            end)
+        end
+    end)
 
--- Minimize functionality
-local minimized = false
-minButton.MouseButton1Click:Connect(function()
-    minimized = not minimized
-    if minimized then
-        mainFrame:TweenSize(UDim2.new(0, 600, 0, 50), "Out", "Quad", 0.3)
-        contentFrame.Visible = false
-        tabFrame.Visible = false
-        minButton.Text = "□"
+    createToggle(miscContent, "No Fog", UDim2.new(0, 10, 0, 90), function(value)
+        if value then
+            game:GetService("Lighting").FogEnd = 1e9
+        else
+            game:GetService("Lighting").FogEnd = 1000
+        end
+    end)
+
+    createToggle(miscContent, "Full Bright", UDim2.new(0, 10, 0, 140), function(value)
+        if value then
+            game:GetService("Lighting").Brightness = 2
+            game:GetService("Lighting").Ambient = Color3.fromRGB(255, 255, 255)
+        else
+            game:GetService("Lighting").Brightness = 1
+            game:GetService("Lighting").Ambient = Color3.fromRGB(0, 0, 0)
+        end
+    end)
+end
+
+-- ==================== BUTTON CLICK HANDLER ====================
+buttonFrame.MouseButton1Click:Connect(function()
+    if guiOpen then
+        if mainGui then
+            mainGui:Destroy()
+            mainGui = nil
+        end
+        guiOpen = false
     else
-        mainFrame:TweenSize(UDim2.new(0, 600, 0, 500), "Out", "Quad", 0.3)
-        contentFrame.Visible = true
-        tabFrame.Visible = true
-        minButton.Text = "–"
+        createMainGUI()
+        guiOpen = true
     end
 end)
 
@@ -1113,7 +1085,6 @@ spawn(function()
         wait(0.1)
         
         if autoFarm then
-            -- Auto farm logic
             local coins = workspace:FindFirstChild("Coins")
             if coins then
                 for _, coin in pairs(coins:GetChildren()) do
@@ -1127,7 +1098,6 @@ spawn(function()
         end
         
         if autoBuy then
-            -- Auto buy logic
             local shop = player.PlayerGui:FindFirstChild("Shop")
             if shop and shop.Enabled then
                 local buyButton = shop:FindFirstChild("BuyButton")
@@ -1138,7 +1108,6 @@ spawn(function()
         end
         
         if autoFloor then
-            -- Auto floor logic
             local floorGui = player.PlayerGui:FindFirstChild("FloorGUI")
             if floorGui then
                 local floorButton = floorGui:FindFirstChild("Floor" .. selectedFloor)
@@ -1149,7 +1118,6 @@ spawn(function()
         end
         
         if autoSpin then
-            -- Auto spin logic
             local spinGui = player.PlayerGui:FindFirstChild("SpinGUI")
             if spinGui then
                 local spinButton = spinGui:FindFirstChild("SpinButton")
@@ -1164,7 +1132,7 @@ end)
 -- ==================== AUTO SHOOT LOOP ====================
 spawn(function()
     while true do
-        wait(0.01) -- Cepet banget
+        wait(0.05)
         
         if autoShootEnabled or aimbotEnabled then
             local nearestZombie, distance = findNearestZombie()
@@ -1172,22 +1140,18 @@ spawn(function()
             if nearestZombie then
                 targetZombie = nearestZombie
                 
-                -- Aimbot (auto aim)
                 if aimbotEnabled then
-                    -- Rotate camera ke zombie
                     local camera = workspace.CurrentCamera
                     local zombiePos = nearestZombie.HumanoidRootPart.Position
                     camera.CFrame = CFrame.new(camera.CFrame.Position, zombiePos)
                 end
                 
-                -- Auto Shoot
                 if autoShootEnabled then
                     shootZombie(nearestZombie)
                 end
             end
         end
         
-        -- Rapid Fire (modify tool cooldown)
         if rapidFireEnabled then
             local tool = player.Character and player.Character:FindFirstChildOfClass("Tool")
             if tool and tool:FindFirstChild("Cooldown") then
@@ -1195,18 +1159,11 @@ spawn(function()
             end
         end
         
-        -- Infinite Ammo
         if infiniteAmmoEnabled then
             local tool = player.Character and player.Character:FindFirstChildOfClass("Tool")
             if tool and tool:FindFirstChild("Ammo") then
                 tool.Ammo.Value = 9999
             end
-        end
-        
-        -- Damage Multiplier
-        if damageMultiplierEnabled then
-            -- This would need to hook into damage events
-            -- Implementation depends on game's remote events
         end
     end
 end)
@@ -1235,7 +1192,7 @@ watermarkText.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
 watermarkText.BackgroundTransparency = 1
 watermarkText.Size = UDim2.new(1, 0, 1, 0)
 watermarkText.Font = Enum.Font.Gotham
-watermarkText.Text = "DEATH RAILS ULTIMATE V2 | JUNZXSEC"
+watermarkText.Text = "DEATH RAILS ULTIMATE | JUNZXSEC"
 watermarkText.TextColor3 = Color3.fromRGB(255, 0, 0)
 watermarkText.TextScaled = true
 
@@ -1274,35 +1231,24 @@ local function notify(msg)
     notification:Destroy()
 end
 
-notify("DEATH RAILS ULTIMATE V2 LOADED!")
+notify("DEATH RAILS ULTIMATE LOADED! Klik tombol merah ⚡ untuk membuka GUI")
 
 -- ==================== CREDITS ====================
 print([[
 ============================================
-DEATH RAILS ULTIMATE V2
+DEATH RAILS ULTIMATE - FIXED VERSION
 CREATED BY JUNZXSEC
 TELEGRAM: @xRay404x
 
-FITUR LENGKAP:
-✅ ESP Target (Player)
+FITUR:
+✅ Button Minimize (⚡) - Klik untuk buka/tutup
+✅ Floating GUI - Bisa digerakin
+✅ ESP Target + Zombie
 ✅ Ghost Shoot (Wallbang)
-✅ ESP Zombie
-✅ Auto Shoot
-✅ Aimbot
-✅ No Recoil
-✅ Rapid Fire
-✅ Infinite Ammo
+✅ Auto Shoot + Aimbot
+✅ Rapid Fire + Infinite Ammo
 ✅ Damage Multiplier
-✅ Auto Farm
-✅ Auto Buy
-✅ Auto Floor
-✅ Auto Spin
-✅ Fly
-✅ Infinite Jump
-✅ Speed Hack
-✅ Jump Power
-✅ Anti AFK
-✅ No Fog
-✅ Full Bright
+✅ Auto Farm + Auto Buy
+✅ Fly + Speed + Jump Power
 ============================================
 ]])
